@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bloomspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #070914; overflow: hidden; height: 100%;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #dfe6ff; }
+  canvas#defaultCanvas0 { display: block; touch-action: none; }
+  .px { font-family: "VT323", ui-monospace, monospace; }
+  #hud { position: fixed; top: 16px; left: 20px; pointer-events: none; user-select: none; }
+  #hud .t { font-size: 12px; letter-spacing: 0.22em; opacity: 0.65; }
+  #hud .c { font-size: 28px; font-weight: 200; margin-top: 4px; }
+  #hud .b { font-size: 12px; opacity: 0.6; margin-top: 3px; letter-spacing: 0.08em; }
+  #goal { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); text-align: center;
+    pointer-events: none; user-select: none; transition: opacity 0.8s; opacity: 0; max-width: 60vw; }
+  #goal .ch { font-size: 20px; letter-spacing: 0.2em; color: #ffd86b; }
+  #goal .g { font-size: 27px; color: #fff; text-shadow: 0 0 8px #0008; }
+  #hint { position: fixed; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 12px;
+    opacity: 0.45; pointer-events: none; letter-spacing: 0.05em; }
+  #dlg { position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%); width: min(720px, 92vw);
+    box-sizing: border-box; background: #000; border: 4px solid #fff; padding: 14px 18px 18px;
+    display: none; gap: 18px; align-items: flex-start; color: #fff; z-index: 5; cursor: pointer; user-select: none; }
+  #dlg canvas { width: 80px; height: 80px; flex: none; image-rendering: pixelated; }
+  #dlg .name { color: #ffd86b; font-size: 24px; margin-bottom: 2px; }
+  #dlg .txt { font-size: 31px; line-height: 1.05; min-height: 66px; white-space: pre-wrap; }
+  #dlg .more { position: absolute; right: 12px; bottom: 4px; font-size: 20px; animation: blink 0.9s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .bar { position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 6; transition: height 3s ease; pointer-events: none; }
+  #barTop { top: 0; } #barBot { bottom: 0; }
+  .cap { position: fixed; z-index: 7; font-size: 29px; color: #fff; text-shadow: 0 0 6px #000, 0 0 2px #000;
+    pointer-events: none; transition: opacity 1.2s; transform: translateX(-50%); white-space: nowrap; }
+  #dim { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #000b 0%, #0006 60%, #0000 100%);
+    z-index: 6; opacity: 0; transition: opacity 3s; pointer-events: none; }
+  #credits { position: fixed; left: 0; right: 0; top: 0; text-align: center; z-index: 7; pointer-events: none;
+    color: #fff; transform: translateY(105vh); font-size: 30px; line-height: 1.5; text-shadow: 0 0 8px #000, 0 0 3px #000; display: none; }
+  #credits .big { font-size: 46px; letter-spacing: 0.15em; color: #ffd86b; }
+  #credits .role { color: #ffd86b; font-size: 21px; margin-top: 26px; }
+  #theEnd { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 8; opacity: 0; transition: opacity 3s; background: radial-gradient(ellipse at center, #000a 0%, #0000 70%); }
+  #theEnd h2 { font-size: 72px; font-weight: normal; letter-spacing: 0.25em; margin: 0 0 30px; color: #fff; }
+  #theEnd .row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  #theEnd .btn { padding: 8px 24px; border: 3px solid #fff; background: #000; font-size: 24px; cursor: pointer; color: #fff; }
+  #theEnd .btn:hover { color: #ffd86b; border-color: #ffd86b; }
+  #start { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #000; z-index: 10; transition: opacity 1.2s; text-align: center; padding: 0 20px; user-select: none; }
+  #start #logoFlower { width: 96px; height: 96px; image-rendering: pixelated; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  #start .logo { font-family: "Press Start 2P", monospace; font-size: clamp(26px, 5.4vw, 60px); letter-spacing: 0.14em;
+    color: #fff; margin: 22px 0 26px; text-shadow: 4px 4px 0 #24502c; animation: flick 6s steps(1) infinite; }
+  @keyframes flick { 0%, 96%, 100% { opacity: 1; } 97% { opacity: 0.6; } 98% { opacity: 1; } 99% { opacity: 0.8; } }
+  #start .line { font-family: "VT323", monospace; font-size: 28px; color: #bdbdbd; margin: 2px 0; }
+  #start .menu { margin-top: 46px; font-family: "VT323", monospace; font-size: 36px; color: #ffd800; cursor: pointer;
+    display: flex; align-items: center; gap: 14px; }
+  #start .menu:hover { color: #fff3a0; }
+  #start .menu canvas { width: 28px; height: 28px; image-rendering: pixelated; }
+  #start .tip { margin-top: 12px; font-family: "VT323", monospace; font-size: 19px; color: #6f6f6f; }
+  #start .foot { position: absolute; bottom: 16px; left: 0; right: 0; font-family: "VT323", monospace; font-size: 18px; color: #555; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div id="start">
+  <canvas id="logoFlower" width="16" height="16"></canvas>
+  <div class="logo">BLOOMSPACE</div>
+  <div class="line">Everyone carries a garden of music inside.</div>
+  <div class="line">Nothing here plays by itself. Listen, create, and the music will come.</div>
+  <div class="menu" id="btnStory"><canvas id="cursorFlower" width="16" height="16"></canvas><span>Begin the Story</span></div>
+  <div class="tip">[ click, or press Z / Enter ] · sound on, headphones recommended</div>
+  <div class="foot">BLOOMSPACE V2.1 (C) YUSHAN ZHANG 2026</div>
+</div>
+<div id="hud">
+  <div class="t">BLOOMSPACE</div>
+  <div class="c" id="chord">—</div>
+  <div class="b" id="bpm"></div>
+</div>
+<div id="goal" class="px"><div class="ch" id="goalCh"></div><div class="g" id="goalTxt"></div></div>
+<div id="dlg" class="px">
+  <canvas id="portrait" width="16" height="16"></canvas>
+  <div style="flex:1"><div class="name" id="dlgName"></div><div class="txt" id="dlgTxt"></div></div>
+  <div class="more" id="dlgMore">▼</div>
+</div>
+<div class="bar" id="barTop"></div><div class="bar" id="barBot"></div>
+<div id="dim"></div>
+<div id="credits" class="px">
+  <div class="big">BLOOMSPACE</div>
+  <div>a garden that composes its own music</div>
+  <div class="role">COMPOSITION, STORY &amp; INTERACTION DESIGN</div><div id="creditName">YOUR NAME</div>
+  <div class="role">CODE</div><div>Tone.js + p5.js</div>
+  <div class="role">STARRING</div>
+  <div>Moss · the forest child</div>
+  <div>Old Ripple · keeper of the river's time</div>
+  <div>The Capfolk · Thump, Tik, Basso, Knock &amp; Fifi</div>
+  <div>Lune · the moon</div>
+  <div>The fireflies · as themselves</div>
+  <div class="role">AND</div><div>You · the gardener</div>
+  <div class="role">&nbsp;</div><div>The garden never played a note on its own.</div>
+  <div>Every sound tonight was yours.</div>
+  <div class="role">&nbsp;</div><div>Everyone carries a garden like this inside.</div>
+  <div>Listen. Create. The music will come.</div>
+  <div class="role">&nbsp;</div><div>* Thank you for listening.</div>
+</div>
+<div id="theEnd" class="px">
+  <h2>THE END</h2>
+  <div class="row"><div class="btn" id="btnStay">* Stay in the grove</div><div class="btn" id="btnAgain">* Play again</div></div>
+</div>
+<div id="hint">Every sound is yours: plant, shake blossoms, stir the river, knock on caps, touch the runes · Click characters to talk · Space to continue</div>
+
+<script>
+// Put your name here; it appears in the end credits
+const CREDIT_NAME = "Yushan Zhang";
+
+// ============================================================
+//  1. HARMONY & MOOD: the runestone chooses the weather of the whole piece
+// ============================================================
+// Each chord is written as pitch classes (0 = C), jazz extensions included; hue colors the scene
+const MOODS = [
+  { name: "Bloom", color: 165, tempo: 1.0, swing: 0.3, barsPerChord: 2, sway: 1,
+    reverb: 0.55, bright: 9000, drive: 0, rain: 0,
+    chords: [
+      { name: "Cmaj9",     root: 0, tones: [0, 4, 7, 11, 2], hue: 205 },
+      { name: "Ebmaj9",    root: 3, tones: [3, 7, 10, 2, 5], hue: 255 },
+      { name: "Abmaj7♯11", root: 8, tones: [8, 0, 3, 7, 2],  hue: 300 },
+      { name: "Fmaj9",     root: 5, tones: [5, 9, 0, 4, 7],  hue: 170 },
+    ] },
+  { name: "Rain", color: 210, tempo: 0.85, swing: 0.65, barsPerChord: 2, sway: 1.6,
+    reverb: 0.68, bright: 3200, drive: 0, rain: 140,
+    chords: [   // a jazz ii–V–I–VI turnaround
+      { name: "Dm11",  root: 2, tones: [2, 5, 9, 0, 4, 7], hue: 215 },
+      { name: "G13",   root: 7, tones: [7, 11, 5, 9, 4],   hue: 228 },
+      { name: "Cmaj9", root: 0, tones: [0, 4, 7, 11, 2],   hue: 200 },
+      { name: "A7♭9",  root: 9, tones: [9, 1, 4, 7, 10],   hue: 238 },
+    ] },
+  { name: "Storm", color: 350, tempo: 1.4, swing: 0, barsPerChord: 1, sway: 4,
+    reverb: 0.3, bright: 16000, drive: 0.35, rain: 320,
+    chords: [   // tense, altered dominants, one per bar
+      { name: "E7♯9",   root: 4,  tones: [4, 8, 2, 7, 11],  hue: 350 },
+      { name: "G7♯9",   root: 7,  tones: [7, 11, 5, 10, 2], hue: 320 },
+      { name: "B♭7♯11", root: 10, tones: [10, 2, 8, 4, 5],  hue: 285 },
+      { name: "C♯7alt", root: 1,  tones: [1, 5, 11, 2, 9],  hue: 10 },
+    ] },
+  { name: "Wander", color: 120, tempo: 1.0, swing: 0.5, barsPerChord: 2, sway: 1.3, free: true,
+    reverb: 0.6, bright: 11000, drive: 0, rain: 0,
+    chords: [   // free jazz: no fixed order, no grid, chromatic neighbours welcome
+      { name: "C7♯11",    root: 0,  tones: [0, 4, 7, 10, 6, 2], hue: 140 },
+      { name: "F♯ø7",     root: 6,  tones: [6, 9, 0, 4],        hue: 60 },
+      { name: "E♭maj7♯5", root: 3,  tones: [3, 7, 11, 2],       hue: 185 },
+      { name: "B13♭9",    root: 11, tones: [11, 3, 9, 0, 8],    hue: 25 },
+    ] },
+];
+let mood = 0, CHORDS = MOODS[0].chords;
+let chordIdx = 0, barsLeft = 1;
+let hue = CHORDS[0].hue, targetHue = hue;
+const M = () => MOODS[mood];
+
+function chordPitches(lo = 55, hi = 93, idx = chordIdx) {
+  const pcs = CHORDS[idx].tones;
+  const out = [];
+  for (let m = lo; m <= hi; m++) if (pcs.includes(m % 12)) out.push(m);
+  return out;
+}
+// RULE: height determines pitch — the higher, the higher the note
+function pitchFromY(y) {
+  const h = constrain(1 - y / groundY, 0, 1);
+  const ps = chordPitches();
+  let m = ps[Math.min(ps.length - 1, Math.floor(h * ps.length))];
+  if (M().free && Math.random() < 0.25) m += Math.random() < 0.5 ? 1 : -1;   // Wander: chromatic neighbours
+  return m;
+}
+const mf = m => Tone.Frequency(m, "midi").toFrequency();
+
+// ============================================================
+//  2. WHAT IS AWAKE (the story unlocks one layer of music at a time)
+// ============================================================
+const U = { trees: false, pad: false, river: false, waterfall: false, mushrooms: false,
+            berries: false, fireflies: false, runes: false, lune: false, moon: false };
+
+// ============================================================
+//  3. SOUND — a "botanica" palette: wood, water, bamboo, chimes, breath
+// ============================================================
+let audioReady = false;
+let kalimba, fuurin, marimba, wood, kick, bass, shaker, chimes, flute, breath, pad, padFilter, noiseGain, splash;
+let drops = [], dropI = 0, fx = {}, voices = {};
+let dragAccum = 0, lastDrop = 0, lightning = 0;
+const slotCount = {};
+
+async function initAudio() {
+  await Tone.start();
+  const limiter = new Tone.Limiter(-1).toDestination();
+  const toneF = new Tone.Filter(9000, "lowpass").connect(limiter);                // mood: brightness
+  const drive = new Tone.Distortion({ distortion: 0.5, wet: 0 }).connect(toneF);   // mood: intensity
+  const master = new Tone.Volume(-4).connect(drive);
+  const reverb = new Tone.Reverb({ decay: 9, wet: 0.55 });
+  await reverb.generate();
+  reverb.connect(master);
+  const delay = new Tone.FeedbackDelay({ delayTime: "8n.", feedback: 0.35, wet: 0.22 }).connect(reverb);
+  const send = g => new Tone.Gain(g).connect(reverb);
+  fx = { toneF, drive, master, reverb };
+
+  // Trees: kalimba — a metallic click that melts into a pure tone
+  kalimba = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 5.4, modulationIndex: 1.4,
+    envelope: { attack: 0.002, decay: 1.3, sustain: 0, release: 1.4 },
+    modulationEnvelope: { attack: 0.001, decay: 0.07, sustain: 0, release: 0.1 }, volume: -13,
+  });
+  kalimba.connect(delay); kalimba.connect(master); kalimba.maxPolyphony = 24;
+  // Pollen: fuurin wind chimes — inharmonic, long ring
+  fuurin = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 2.76, modulationIndex: 2.6,
+    envelope: { attack: 0.001, decay: 2.4, sustain: 0, release: 2.4 },
+    modulationEnvelope: { attack: 0.001, decay: 1.2, sustain: 0, release: 1 }, volume: -23,
+  }).connect(delay);
+  fuurin.maxPolyphony = 24;
+  // River stones: wooden marimba
+  marimba = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 3.98, modulationIndex: 1.3,
+    envelope: { attack: 0.001, decay: 0.6, sustain: 0, release: 0.6 },
+    modulationEnvelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.05 }, volume: -12,
+  });
+  marimba.connect(master); marimba.connect(send(0.5)); marimba.maxPolyphony = 16;
+  // River: water droplets — a sine that chirps upward, like a drop meeting water
+  const dropBus = new Tone.PingPongDelay({ delayTime: "16n", feedback: 0.3, wet: 0.35 });
+  dropBus.connect(master); dropBus.connect(send(0.6));
+  for (let i = 0; i < 12; i++) drops.push(new Tone.Synth({ oscillator: { type: "sine" },
+    envelope: { attack: 0.001, decay: 0.17, sustain: 0, release: 0.08 }, volume: -7 }).connect(dropBus));
+  const splashBP = new Tone.Filter({ frequency: 2600, type: "bandpass", Q: 0.8 }).connect(dropBus);
+  splash = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.002, decay: 0.07, sustain: 0 }, volume: -24 }).connect(splashBP);
+  // Berries & Knock: bamboo / wood block
+  wood = new Tone.PolySynth(Tone.MembraneSynth, { pitchDecay: 0.006, octaves: 0.8,
+    envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.08 }, volume: -7 });
+  wood.connect(master); wood.connect(send(0.3)); wood.maxPolyphony = 12;
+  // Capfolk: log drum, upright bass, shaker, chimes
+  kick = new Tone.MembraneSynth({ pitchDecay: 0.03, octaves: 2.5, envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 0.2 }, volume: -8 }).connect(master);
+  bass = new Tone.MonoSynth({
+    oscillator: { type: "triangle" }, portamento: 0.02, filter: { Q: 1.5, type: "lowpass" },
+    envelope: { attack: 0.005, decay: 0.55, sustain: 0.12, release: 0.4 },
+    filterEnvelope: { attack: 0.002, decay: 0.14, sustain: 0.2, release: 0.3, baseFrequency: 130, octaves: 2.8 }, volume: -6,
+  }).connect(master);
+  const shBP = new Tone.Filter({ frequency: 5200, type: "bandpass", Q: 0.9 }); shBP.connect(master); shBP.connect(send(0.25));
+  shaker = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.006, decay: 0.09, sustain: 0 }, volume: -14 }).connect(shBP);
+  chimes = new Tone.PolySynth(Tone.FMSynth, { harmonicity: 3.5, modulationIndex: 1.8,
+    envelope: { attack: 0.001, decay: 0.9, sustain: 0, release: 1 },
+    modulationEnvelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.3 }, volume: -16 }).connect(delay);
+  // Fireflies: a breathy wooden flute
+  const vib = new Tone.Vibrato(5, 0.08); vib.connect(delay); vib.connect(master);
+  flute = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" },
+    envelope: { attack: 0.05, decay: 0.3, sustain: 0.35, release: 0.6 }, volume: -12 }).connect(vib);
+  flute.maxPolyphony = 12;
+  const brBP = new Tone.Filter({ frequency: 1800, type: "bandpass", Q: 2 }).connect(vib);
+  breath = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.03, decay: 0.15, sustain: 0 }, volume: -22 }).connect(brBP);
+  // Waterfall: ambience (the only sound that is always there)
+  noiseGain = new Tone.Gain(0).connect(master);
+  const nf = new Tone.Filter(1300, "lowpass").connect(noiseGain);
+  new Tone.Noise("pink").connect(nf).start();
+  // Runestone: a blooming pad, heard only when a rune is touched
+  const chorus = new Tone.Chorus(1.5, 3.5, 0.7).start(); chorus.connect(reverb); chorus.connect(master);
+  padFilter = new Tone.Filter(1200, "lowpass").connect(chorus);
+  pad = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fattriangle", count: 3, spread: 24 },
+    envelope: { attack: 0.8, decay: 1, sustain: 0.6, release: 4 }, volume: -20 }).connect(padFilter);
+
+  // Character voices: every letter of dialogue is a note of the current chord
+  voices = {
+    moss:   { synth: new Tone.PolySynth(Tone.FMSynth, { harmonicity: 5.4, modulationIndex: 1, envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.08 }, modulationEnvelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.03 }, volume: -18 }).connect(master), lo: 72, hi: 86 },
+    ripple: { synth: new Tone.PolySynth(Tone.FMSynth, { harmonicity: 3.98, modulationIndex: 1, envelope: { attack: 0.002, decay: 0.25, sustain: 0, release: 0.2 }, modulationEnvelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.05 }, volume: -12 }).connect(send(0.6)), lo: 43, hi: 55 },
+    cap:    { synth: new Tone.PolySynth(Tone.MembraneSynth, { pitchDecay: 0.005, octaves: 0.6, envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.03 }, volume: -16 }).connect(master), lo: 57, hi: 67 },
+    lune:   { synth: new Tone.PolySynth(Tone.FMSynth, { harmonicity: 2.76, modulationIndex: 1.6, envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.6 }, volume: -22 }).connect(send(0.8)), lo: 79, hi: 93 },
+  };
+
+  Tone.Transport.bpm.value = 66;
+  // The harmony moves silently (it only colors what the player plays)
+  chordIdx = CHORDS.length - 1; barsLeft = 1;
+  Tone.Transport.scheduleRepeat((time) => {
+    if (--barsLeft > 0) return;
+    if (M().free) { let n; do { n = Math.floor(Math.random() * CHORDS.length); } while (n === chordIdx); chordIdx = n; barsLeft = 1 + Math.floor(Math.random() * 3); }
+    else { chordIdx = (chordIdx + 1) % CHORDS.length; barsLeft = M().barsPerChord; }
+    const ch = CHORDS[chordIdx];
+    Tone.Draw.schedule(() => { targetHue = ch.hue; showChord(); }, time);
+  }, "1m", 0);
+
+  // Capfolk loop station: each mushroom replays exactly the hits the player knocked in
+  Tone.Transport.scheduleRepeat((time) => {
+    const st = stepAt(time), T = time + swingOffset(st);
+    Tone.Draw.schedule(() => { playhead = st; }, time);
+    for (const m of mushrooms) {
+      if (m.muted || !m.pattern[st]) continue;
+      if (m.justStep === st && Math.abs(time - m.justTime) < 0.25) continue;   // the live hit already sounded
+      let tt = T;
+      if (M().free) { if (Math.random() < 0.12) continue; tt += (Math.random() - 0.3) * 0.06; }   // Wander: loose, breathing time
+      mushSound(m, tt, st);
+      Tone.Draw.schedule(() => { m.bounce = 1; if (m.role === "kick" && M().name === "Storm") lightning = 1; }, tt);
+    }
+    // Fireflies: where they gather, they sing
+    if (st % 2 === 0 && U.fireflies && fireflyCrowd >= 5 && Math.random() < 0.8) {
+      fireflyPhrase(pitchFromY(gatherY), T);
+      Tone.Draw.schedule(() => { fireflyNotes++; flashes.push({ x: gatherX, y: gatherY, r: 6, a: 0.7 }); }, T);
+    }
+  }, "16n", 0);
+
+  Tone.Transport.start("+0.1");
+  audioReady = true;
+  setMood(mood, true);
+}
+
+const stepAt = t => Math.round(Tone.Transport.getTicksAtTime(t) / (Tone.Transport.PPQ / 4)) % 16;
+const SIXTEENTH = () => 60 / Tone.Transport.bpm.value / 4;
+// Swing: the off-beat 8th is pushed late (0 = straight, 1 = full triplet swing)
+const swingOffset = st => st % 4 === 2 ? M().swing * 0.667 * SIXTEENTH() : 0;
+// Live notes snap to the swung 16th grid, except in Wander, where time is free
+function quantTime() {
+  if (M().free) { const t = Tone.now() + 0.01; return { t, st: stepAt(t), grid: t }; }
+  const g = Tone.Transport.nextSubdivision("16n"), st = stepAt(g);
+  return { t: g + swingOffset(st), st, grid: g };
+}
+let playhead = 0;
+const bassNote = root => 36 + root - (root > 6 ? 12 : 0);
+function mushSound(m, time, st) {
+  const ch = CHORDS[chordIdx], next = CHORDS[(chordIdx + 1) % CHORDS.length];
+  const storm = M().name === "Storm";
+  if (m.role === "kick") kick.triggerAttackRelease(mf(31 + ch.root), "8n", time, storm ? 1 : 0.75);
+  else if (m.role === "bass") {
+    // RULE: Basso walks — root, third, fifth, then a chromatic step into the next chord
+    const beat = st >> 2, b = bassNote(ch.root);
+    let n = b;
+    if (beat === 1) n = b + ((ch.tones[1] - ch.root + 12) % 12);
+    else if (beat === 2) n = b + ((ch.tones[2] - ch.root + 12) % 12);
+    else if (beat === 3) n = bassNote(next.root) + (st % 2 ? -1 : 1);
+    bass.triggerAttackRelease(mf(n), "8n", time, 0.85);
+  }
+  else if (m.role === "hat") shaker.triggerAttackRelease(storm ? "16n" : "32n", time, storm ? 1 : 0.7);
+  else if (m.role === "wood") { const ps = chordPitches(72, 86); wood.triggerAttackRelease(mf(ps[(st >> 2) % ps.length]), "32n", time, 0.5); }
+  else if (m.role === "bell") { const ps = chordPitches(76, 91); chimes.triggerAttackRelease(mf(ps[st % ps.length]), "16n", time, 0.6); }
+}
+// Fireflies phrase like a horn player: approach notes and enclosures around the target
+function fluteNote(n, t, v) { flute.triggerAttackRelease(mf(n), "16n", t, v); breath.triggerAttackRelease("32n", t, v * 0.6); }
+function fireflyPhrase(target, t) {
+  const s = SIXTEENTH(), r = Math.random();
+  if (M().free && r < 0.5) [target + 1, target - 1, target].forEach((n, i) => fluteNote(n, t + i * s * 0.667, i === 2 ? 0.6 : 0.4));
+  else if (r < 0.35) { fluteNote(target - 1, t, 0.4); fluteNote(target, t + s, 0.6); }
+  else fluteNote(target, t, 0.6);
+}
+function droplet(midi, t, vel) {
+  const s = drops[dropI++ % drops.length], f = mf(midi);
+  s.triggerAttackRelease(f * 0.6, 0.14, t, vel);
+  s.frequency.exponentialRampToValueAtTime(f, t + 0.04);
+}
+
+function playNote(midi, kind, vel = 0.7) {
+  if (!audioReady) return;
+  const q = quantTime(), t = q.t;
+  const key = kind + q.grid.toFixed(2);
+  slotCount[key] = (slotCount[key] || 0) + 1;
+  if (slotCount[key] > 2) return;
+  const f = mf(midi);
+  if (kind === "grow") kalimba.triggerAttackRelease(f, "8n", t, vel);
+  else if (kind === "seed") kalimba.triggerAttackRelease(f, "4n", t, vel);
+  else if (kind === "harp") marimba.triggerAttackRelease(f, "8n", t, vel);
+  else if (kind === "perc") { wood.triggerAttackRelease(f, "32n", t, vel); if (M().name === "Storm" && vel > 0.6) Tone.Draw.schedule(() => { lightning = 0.7; }, t); }
+  else fuurin.triggerAttackRelease(f, "16n", t, vel);
+}
+
+let lastBlip = 0;
+function blip(who) {
+  const v = voices[who]; if (!v) return;
+  const now = Tone.now(); if (now - lastBlip < 0.045) return; lastBlip = now;
+  const ps = chordPitches(v.lo, v.hi);
+  v.synth.triggerAttackRelease(mf(random(ps)), "32n", now, 0.7);
+}
+
+function showChord() { const el = document.getElementById("chord"); if (el && CHORDS[chordIdx]) el.textContent = `${M().name} · ${CHORDS[chordIdx].name}`; }
+// RULE: the runestone sets the mood of everything: harmony, tempo, swing, timbre, weather
+function setMood(i, silent) {
+  mood = i; CHORDS = MOODS[i].chords; chordIdx = 0; barsLeft = MOODS[i].barsPerChord;
+  targetHue = CHORDS[0].hue; showChord(); makeRain();
+  if (!audioReady) return;
+  const m = MOODS[i];
+  fx.reverb.wet.rampTo(m.reverb, 1.5); fx.toneF.frequency.rampTo(m.bright, 1.5); fx.drive.wet.rampTo(m.drive, 1.5);
+  if (silent) return;
+  const ch = CHORDS[0];
+  pad.triggerAttackRelease([36 + ch.root, 43 + ch.root, ...ch.tones.slice(1, 5).map(pc => 60 + pc)].map(mf), 3, Tone.now(), m.name === "Storm" ? 0.9 : 0.6);
+  if (m.name === "Storm") lightning = 1;
+}
+
+// ============================================================
+//  4. PIXEL SPRITES (used for dialogue portraits and the forest folk)
+// ============================================================
+const SPR = {
+  moss: { pal: { g: "#9be27f", G: "#5fbf55", h: "#2f7a4a", H: "#24603a", f: "#f3e6c8", e: "#1a1a2a", p: "#f2a0a0", m: "#8a5040" }, rows: [
+    ".......gg.......", "......gGg.......", ".......g........", ".....hhhhhh.....",
+    "....hhhhhhhh....", "...hhhhhhhhhh...", "...hhffffffhh...", "..hhffffffffhh..",
+    "..hhfeffffefhh..", "..hhfeffffefhh..", "..hhffffffffhh..", "..hhpffmmffphh..",
+    "...hhffffffhh...", "...HhhhhhhhhH...", "....HHHHHHHH....", ".....ee..ee.....",
+  ]},
+  ripple: { pal: { o: "#e8a03a", O: "#f6c86e", d: "#b8742a", e: "#111", W: "#fff", m: "#7a3a1a", w: "#f7e3a0" }, rows: [
+    "................", "....oooooo......", "..oooooooooo....", ".oooooooooooo...",
+    "ooWeoooooooooO..", "ooeeooooooooOOO.", "oooooooodooOOOOO", "mmoooooodooooOOO",
+    "ommoooooooooOOO.", "w.oooooooooOO...", "w..oooooooo.....", ".w...oooo.......",
+    "..w.............", "................", "................", "................",
+  ]},
+  cap: { pal: { r: "#d9534f", w: "#fff3e0", u: "#8e3a36", s: "#f1e4cf", e: "#1a1a2a", m: "#8a5040" }, rows: [
+    "................", ".....rrrrrr.....", "...rrrwrrrrrr...", "..rrwwrrrrwwrr..",
+    ".rrrwrrrrrrwrrr.", ".rrrrrrwwrrrrrr.", "rrrrrrrwwrrrrrrr", "..uuuuuuuuuuuu..",
+    "....ssssssss....", "....sesssses....", "....sesssses....", "....ssssssss....",
+    "....sssmmsss....", ".....ssssss.....", ".....ssssss.....", "....ssssssss....",
+  ]},
+  lune: { pal: { y: "#f6efc8", c: "#d8cfa0", e: "#4a4a6a", p: "#f2b0b0", m: "#8a6a50" }, rows: [
+    ".....yyyyyy.....", "...yyyyyyyyyy...", "..yyyyyyyyyyyy..", ".yyyyyyyycyyyyy.",
+    ".yyyyyyyyyyyyyy.", "yyyyyyyyyyyyyyyy", "yyeeyyyyyyyyeeyy", "yyyyyyyyyyyyyyyy",
+    "yyyyyyyyyyyyyyyy", "yypyyyyyyyyyypyy", "yyyyyyymmyyyyyyy", ".yyyyyyyyyyyyyy.",
+    ".yyyyycyyyyyyyy.", "..yyyyyyyyyyyy..", "...yyyyyyyyyy...", ".....yyyyyy.....",
+  ]},
+};
+function renderSprite(rows, pal) {
+  const c = document.createElement("canvas"); c.width = 16; c.height = 16;
+  const x = c.getContext("2d");
+  rows.forEach((r, j) => { for (let i = 0; i < 16; i++) { const ch = r[i]; if (ch && ch !== "." && pal[ch]) { x.fillStyle = pal[ch]; x.fillRect(i, j, 1, 1); } } });
+  return c;
+}
+const SPRITE = {};
+for (const k in SPR) SPRITE[k] = renderSprite(SPR[k].rows, SPR[k].pal);
+function capSprite(color, asleep) {
+  const rows = SPR.cap.rows.slice();
+  if (asleep) {
+    rows[9] = "....ssssssss...."; rows[10] = "....eessssee....";
+  }
+  return renderSprite(rows, { ...SPR.cap.pal, r: color });
+}
+function drawSprite(img, x, y, scale, glow) {   // anchored at bottom-center
+  const ctx = drawingContext;
+  ctx.imageSmoothingEnabled = false;
+  if (glow) { ctx.shadowBlur = 14; ctx.shadowColor = glow; }
+  ctx.drawImage(img, Math.round(x - 8 * scale), Math.round(y - 16 * scale), 16 * scale, 16 * scale);
+  ctx.shadowBlur = 0;
+}
+
+// ============================================================
+//  5. DIALOGUE (Undertale-style box; each letter is a musical blip)
+// ============================================================
+const NAMES = { moss: "Moss", ripple: "Old Ripple", cap: "The Capfolk", lune: "Lune" };
+const dlg = { queue: [], cur: null, shown: 0, busy: false };
+const $ = id => document.getElementById(id);
+
+function say(lines, onDone) {
+  for (const l of lines) dlg.queue.push({ who: l[0], text: l[1] });
+  if (onDone) dlg.queue.push({ cb: onDone });
+  if (!dlg.cur && !dlg.busy) nextLine();
+}
+function nextLine() {
+  dlg.cur = null; dlg.busy = true;
+  while (dlg.queue.length && dlg.queue[0].cb) dlg.queue.shift().cb();
+  dlg.busy = false;
+  if (!dlg.queue.length) { $("dlg").style.display = "none"; return; }
+  dlg.cur = dlg.queue.shift(); dlg.shown = 0;
+  $("dlg").style.display = "flex";
+  $("dlgName").textContent = NAMES[dlg.cur.who] || "";
+  $("dlgTxt").textContent = "";
+  const pc = $("portrait").getContext("2d");
+  pc.clearRect(0, 0, 16, 16); pc.drawImage(SPRITE[dlg.cur.who], 0, 0);
+}
+function advance() {
+  if (!dlg.cur) return;
+  if (dlg.shown < dlg.cur.text.length) dlg.shown = dlg.cur.text.length;
+  else nextLine();
+}
+function updateDialogue() {
+  if (!dlg.cur) return;
+  const t = dlg.cur.text, before = Math.floor(dlg.shown);
+  if (dlg.shown < t.length) {
+    dlg.shown = Math.min(t.length, dlg.shown + 0.6);
+    const now = Math.floor(dlg.shown);
+    for (let i = before; i < now; i++) if (/[A-Za-z0-9]/.test(t[i]) && i % 2 === 0) blip(dlg.cur.who);
+  }
+  $("dlgTxt").textContent = t.slice(0, Math.floor(dlg.shown));
+  $("dlgMore").style.visibility = dlg.shown >= t.length ? "visible" : "hidden";
+}
+$("dlg").addEventListener("click", advance);
+
+// ============================================================
+//  6. THE STORY: waking the silent grove, one instrument at a time
+// ============================================================
+let treesPlanted = 0, stirred = 0, fireflyNotes = 0;
+const runesLit = new Set();
+const story = { ch: -1, waiting: false, free: false };
+
+const CH = [
+  { title: "I · SEEDS",
+    goal: () => `Click above the bank to plant seeds (${Math.min(treesPlanted, 3)}/3)`,
+    hint: "* Click anywhere above the bank. A seed always knows where to land.",
+    enter() { U.trees = true; mossGo(width * 0.38); },
+    intro: [["moss", "* ...oh! Footsteps! You found your way in."],
+            ["moss", "* Hi. I'm Moss. I look after this garden."],
+            ["moss", "* Don't you recognize it? It's yours. Everyone carries a garden like this inside."],
+            ["moss", "* It isn't empty. It's just been waiting for someone to listen."],
+            ["moss", "* Plant something. Music grows wherever you pay attention."]],
+    done: () => treesPlanted >= 3,
+    outro: [["moss", "* Hear that? You didn't find that sound. You grew it."],
+            ["moss", "* Try clicking a blossom. Shake it. Gardens love to answer each other."],
+            ["moss", "* Come. Someone by the river has been waiting a long time."]] },
+  { title: "II · THE RIVER",
+    goal: () => `Drag back and forth across the river (${Math.min(100, Math.floor(stirred / 25))}%)`,
+    hint: "* Drag across the water, left and right. The river only speaks to moving hands.",
+    enter() { U.river = true; U.waterfall = true; waterLevel = 1; mossBridge(); },
+    intro: [["moss", "* This is Old Ripple's river. He is the oldest part of your garden."],
+            ["moss", "* He only wakes for someone who touches the water. Go on. Drag across it."]],
+    done: () => stirred >= 2500,
+    outro: [["ripple", "* Hrrm. A hand in my river. At last."],
+            ["ripple", "* Most people hurry past their own water. They never hear it moving."],
+            ["ripple", "* Drag right and I rush. Drag left and I rest. This garden breathes at my pace... which is your pace."],
+            ["ripple", "* And the waterfall. Click it when you need more water. Some days you do."]] },
+  { title: "III · THE CAPFOLK",
+    goal: () => `Knock a rhythm into three of the Capfolk (${mushrooms.filter(m => m.awake).length}/3)`,
+    hint: "* Knock on a cap in time. It remembers every knock and plays it back each bar. Hold one down to let it forget.",
+    enter() { U.mushrooms = true; U.berries = true; mossGo(width * 0.37); },
+    intro: [["moss", "* The Capfolk! They're the heartbeat of this garden."],
+            ["moss", "* They can't invent a rhythm. They only remember the ones you give them."]],
+    done: () => mushrooms.filter(m => m.awake).length >= 3,
+    outro: [["cap", "* WE REMEMBER. EVERY KNOCK. EVERY BAR."],
+            ["cap", "* You already had a rhythm inside you, you know. We are just very loud about it."],
+            ["cap", "* Hold one of us down to forget. Forgetting is allowed. Then knock something new."],
+            ["cap", "* Also. Berries. Pick them off the trees. We like how they bounce."]] },
+  { title: "IV · FIREFLIES",
+    goal: () => `Lead the fireflies through the sky (${Math.min(fireflyNotes, 16)}/16 notes)`,
+    hint: "* Move slowly through the sky. They follow, and sing wherever they gather. Higher means higher.",
+    enter() { U.fireflies = true; mossGo(width * 0.6); },
+    intro: [["moss", "* The fireflies are little thoughts. They drift until you move."],
+            ["moss", "* Lead them. Wherever they gather, they sing. Up there, there are no wrong notes. Only new ones."]],
+    done: () => fireflyNotes >= 16,
+    outro: [["moss", "* That melody didn't exist a minute ago. Now it always will have."],
+            ["moss", "* ...Someone up there has been watching you play."]] },
+  { title: "V · THE RUNESTONE",
+    goal: () => `Touch the runes to change the garden's mood (${runesLit.size}/3)`,
+    hint: "* The old stone on the left. Bloom, Rain, Storm, Wander. Each one changes the whole garden.",
+    enter() { U.runes = true; U.lune = true; mossGo(width * 0.15); },
+    intro: [["lune", "* Hello, gardener. I am Lune. I keep the weather of this place."],
+            ["lune", "* The old stone holds four moods. Bloom. Rain. Storm. Wander."],
+            ["lune", "* An inner garden is not always gentle. It should not be. Let it bloom. Let it pour. Let it thunder."],
+            ["lune", "* And when you Wander, there are no rules at all. Play as if no one were keeping time."]],
+    done: () => runesLit.size >= 3,
+    outro: [["lune", "* You see? Every weather has its own music. None of them is the wrong one."],
+            ["lune", "* One thing remains. This garden has been held in night for so long."]] },
+  { title: "VI · DAWN",
+    goal: () => `Drag the moon down to the hills (${Math.floor(moonT * 100)}%)`,
+    hint: "* Carry Lune down to the hills. Gently.",
+    enter() { U.moon = true; mossGo(width * 0.45); },
+    intro: [["lune", "* Carry me down to the hills. Let the morning into your garden."]],
+    done: () => moonT >= 0.95,
+    outro: [["moss", "* ...sunlight."],
+            ["ripple", "* Hrrm. The water is warm again."],
+            ["cap", "* BONK. (That means: we will keep your rhythm.)"],
+            ["lune", "* This garden was never broken. It was only waiting for you to listen."],
+            ["moss", "* It goes with you, you know. Wherever you are. Listen, and make something."],
+            ["moss", "* The music will come."]] },
+];
+
+function startChapter(i) {
+  story.ch = i; story.waiting = false;
+  if (i >= CH.length) { startFinale(); return; }
+  CH[i].enter();
+  say(CH[i].intro);
+  $("goalCh").textContent = CH[i].title;
+  $("goal").style.opacity = 1;
+}
+function endStory() {
+  $("goalCh").textContent = "THE GROVE IS AWAKE";
+  $("goalTxt").textContent = "Free play · drag the moon back up for night";
+  setTimeout(() => { $("goal").style.opacity = 0; }, 9000);
+}
+function updateStory() {
+  if (story.free || story.ch < 0 || story.ch >= CH.length) return;
+  const c = CH[story.ch];
+  $("goalTxt").textContent = c.goal();
+  if (!story.waiting && c.done()) {
+    story.waiting = true;
+    say(c.outro, () => startChapter(story.ch + 1));
+  }
+}
+function freePlay() {
+  story.free = true;
+  for (const k in U) U[k] = true;
+  waterLevel = Math.max(waterLevel, 1);
+  ripple.wake();
+  dlg.queue = []; dlg.cur = null; $("dlg").style.display = "none";
+  story.ch = CH.length; endStory();
+  $("goal").style.opacity = 1;
+}
+
+// ============================================================
+//  6b. THE FINALE: everyone joins, credits roll, instruments leave one by one
+// ============================================================
+const finale = { on: false, lanterns: [], gather: false, lanternsOn: false };
+const BAR = 60 / 72 * 4;   // finale tempo: 72 BPM
+
+function caption(text, x, y) {
+  const d = document.createElement("div");
+  d.className = "cap px"; d.textContent = text;
+  d.style.left = x + "px"; d.style.top = y + "px"; d.style.opacity = 0;
+  document.body.appendChild(d);
+  requestAnimationFrame(() => { d.style.opacity = 1; });
+  setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 1500); }, 4200);
+}
+function at(bars, fn) { setTimeout(fn, bars * BAR * 1000); }
+
+function startFinale() {
+  finale.on = true;
+  ["goal", "hint", "hud"].forEach(id => { $(id).style.transition = "opacity 2s"; $(id).style.opacity = 0; });
+  $("barTop").style.height = "8vh"; $("barBot").style.height = "8vh";
+  mossGo(width * 0.5);
+  caption("* The grove is listening.", width / 2, height * 0.2);
+  at(1, () => { ripple.surfT = 1; caption("* Old Ripple drifts to the surface.", ripple.x, riverTop - 40); });
+  at(3, () => caption("* The Capfolk keep your rhythm.", width * 0.42, groundY - 100));
+  at(5, () => { finale.gather = true; caption("* The fireflies rise.", width * 0.5, height * 0.3); });
+  at(7, () => { finale.lanternsOn = true; const mp = moonPos(); caption("* Lune lights the way home.", mp.x, mp.y - 70); });
+  at(9, rollCredits);
+  // your loops leave one by one while the credits roll
+  [...mushrooms].reverse().forEach((m, i) => at(11 + i, () => { if (m.awake) { m.muted = true; m.bounce = 1; } }));
+  at(16, () => { finale.lanternsOn = false; finale.gather = false; });
+  at(18, showTheEnd);
+}
+function rollCredits() {
+  const c = $("credits");
+  $("creditName").textContent = CREDIT_NAME;
+  c.style.display = "block"; $("dim").style.opacity = 1;
+  const h = c.offsetHeight;
+  c.style.transition = `transform ${BAR * 9}s linear`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { c.style.transform = `translateY(${-h - 40}px)`; }));
+}
+function showTheEnd() {
+  const e = $("theEnd");
+  e.style.display = "flex";
+  requestAnimationFrame(() => { e.style.opacity = 1; });
+}
+function leaveFinale() {
+  $("theEnd").style.display = "none"; $("credits").style.display = "none"; $("dim").style.opacity = 0;
+  $("barTop").style.height = "0"; $("barBot").style.height = "0";
+  ["hud", "hint", "goal"].forEach(id => { $(id).style.opacity = 1; });
+  finale.on = false;
+  story.ch = CH.length; endStory();
+  mushrooms.forEach(m => m.muted = false);
+}
+function updateLanterns() {
+  if (finale.lanternsOn && random() < 0.05) finale.lanterns.push({ x: random(40, width - 180), y: groundY, vx: random(-0.2, 0.2), vy: random(-0.9, -0.5), ph: random(TWO_PI), h: random([30, 45, 330, 200]) });
+  const ctx = drawingContext;
+  ctx.globalCompositeOperation = "lighter";
+  for (const l of finale.lanterns) {
+    l.x += l.vx + sin(frameCount * 0.02 + l.ph) * 0.3; l.y += l.vy;
+    const a = constrain(l.y / groundY, 0, 1);
+    ctx.fillStyle = `hsla(${l.h},90%,60%,${0.12 * a})`; ctx.beginPath(); ctx.arc(l.x, l.y, 14, 0, TWO_PI); ctx.fill();
+    ctx.fillStyle = `hsla(${l.h},90%,75%,${0.8 * a})`; ctx.fillRect(l.x - 3, l.y - 4, 6, 8);
+  }
+  ctx.globalCompositeOperation = "source-over";
+  finale.lanterns = finale.lanterns.filter(l => l.y > -20);
+}
+
+// ============================================================
+//  7. THE RIVER, WATERFALL AND BRIDGE
+// ============================================================
+let flow = 0.15, flowTarget = 1, riverOffset = 0, waterLevel = 0;
+let riverTop, riverBot, bridgeX;
+let stones = [], petals = [];
+const flowToBpm = f => Math.round(50 + f * 18);    // flow 0.4 → 57 BPM, flow 3 → 104 BPM
+const WATER_GAIN = [0, 0.045, 0.09, 0.16];
+
+function riverEdge(x, edge) {
+  const base = edge === "top" ? riverTop : riverBot;
+  return base + sin(x * 0.006 + (edge === "top" ? 0 : 2)) * 6 + sin(x * 0.017) * 3;
+}
+function makeStones() {
+  stones = [];
+  for (let i = 0; i < 5; i++) stones.push({ x: width * (0.12 + 0.15 * i) + random(-25, 25),
+    y: random(riverTop + 14, riverBot - 14), w: random(22, 34), degree: i, glow: 0 });
+}
+class Petal {
+  constructor(x, y) { this.x = x; this.y = constrain(y, riverTop + 8, riverBot - 8); this.v = random(0.8, 1.3); this.ph = random(TWO_PI); this.rot = random(TWO_PI); this.born = millis(); }
+  update() {
+    const px = this.x;
+    this.x += this.v * flow * 1.3;
+    this.y += sin(frameCount * 0.03 + this.ph) * 0.15;
+    this.rot += 0.01 * flow;
+    for (const s of stones) {
+      if (px < s.x && this.x >= s.x && Math.abs(this.y - s.y) < 18) {
+        const ps = chordPitches(64, 96);
+        playNote(ps[s.degree % ps.length], "harp", 0.55);
+        s.glow = 1; flashes.push({ x: s.x, y: s.y, r: 4, a: 0.8, flat: true });
+      }
+    }
+    if (this.x > wfX() - 10 || millis() - this.born > 6000) this.dead = true;
+  }
+  draw() {
+    const a = 0.85 * constrain((6000 - (millis() - this.born)) / 1500, 0, 1);   // petals sink after a few seconds
+    push(); translate(this.x, this.y); rotate(this.rot); noStroke(); fill((hue + 40) % 360, 35, 100, a); ellipse(0, 0, 7, 4); pop();
+  }
+}
+// RULE: dragging across the river makes water — droplets from the current chord, left = low, right = high
+function strum(x, speed) {
+  const now = Tone.now();
+  if (now - lastDrop < 0.05) return;
+  lastDrop = now;
+  const ps = chordPitches(62, 98);
+  const i = Math.min(ps.length - 1, Math.floor(constrain(x / width, 0, 0.999) * ps.length));
+  const v = 0.35 + Math.min(1, speed / 25) * 0.5, storm = M().name === "Storm";
+  let m = ps[i];
+  if (M().free && Math.random() < 0.3) m += Math.random() < 0.5 ? 1 : -1;
+  droplet(m, now, v);
+  // smaller grains trail behind, like water running over stones
+  const grains = Math.min(3, storm ? 3 : 1 + Math.floor(speed / 15));
+  for (let g = 1; g <= grains; g++) droplet(ps[constrain(i + (Math.random() < 0.5 ? -g : g), 0, ps.length - 1)], now + 0.03 * g + Math.random() * 0.03, v * 0.5 / g);
+  if (Math.random() < (storm ? 0.8 : 0.3)) splash.triggerAttackRelease(0.05, now, v);
+}
+const wfX = () => width - 95;     // waterfall column
+
+// Old Ripple, the river carp
+const ripple = {
+  awake: false, x: 0, y: 0, dir: 1, surf: 0, surfT: 0, t: 0,
+  wake() { if (this.awake) return; this.awake = true; this.x = width * 0.45; this.surfT = 1; this.surf = 0; },
+  update() {
+    if (!this.awake) return;
+    this.t += 0.02;
+    this.x += this.dir * 0.35 * (0.6 + flow * 0.4);
+    if (this.x > wfX() - 90) this.dir = -1;
+    if (this.x < 70) this.dir = 1;
+    this.y = (riverTop + riverBot) / 2 + sin(this.t * 0.7) * (riverBot - riverTop) * 0.22;
+    if (random() < 0.003) this.surfT = this.surfT ? 0 : 1;
+    this.surf += (this.surfT - this.surf) * 0.02;
+  },
+  hit(mx, my) { return this.awake && Math.abs(mx - this.x) < 45 && Math.abs(my - this.y) < 22; },
+  draw() {
+    if (!this.awake) return;
+    const ctx = drawingContext, s = height / 800, a = 0.3 + 0.65 * this.surf;
+    ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.dir * s, s);
+    ctx.globalAlpha = a;
+    ctx.shadowBlur = 16; ctx.shadowColor = "hsla(35,90%,60%,0.8)";
+    const wag = sin(this.t * 6) * 6;
+    ctx.fillStyle = "hsl(38,85%,62%)";
+    ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(-56, -14 + wag); ctx.lineTo(-50, 0); ctx.lineTo(-56, 14 + wag); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "hsl(32,85%,55%)";
+    ctx.beginPath(); ctx.ellipse(0, 0, 38, 15, 0, 0, TWO_PI); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "hsl(40,90%,75%)";
+    ctx.beginPath(); ctx.ellipse(-2, -5, 18, 3, 0, 0, TWO_PI); ctx.fill();
+    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(24, -4, 2.4, 0, TWO_PI); ctx.fill();
+    ctx.strokeStyle = "hsl(45,80%,85%)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(36, 3); ctx.quadraticCurveTo(48, 6, 50, 16 + wag * 0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(35, 5); ctx.quadraticCurveTo(42, 12, 40, 22 - wag * 0.3); ctx.stroke();
+    ctx.restore();
+  },
+};
+
+// ============================================================
+//  8. THE CAPFOLK (mushroom band), RUNESTONE, MOON, FIREFLIES, MOSS
+// ============================================================
+let mushrooms = [];
+const MUSH_DEF = [
+  { name: "Thump", role: "kick", fx: 0.21, size: 3.0, color: "#c95b4f", steps: [0, 8] },
+  { name: "Tik",   role: "hat",  fx: 0.30, size: 2.1, color: "#5fa8d3", steps: [4, 12, 14] },
+  { name: "Basso", role: "bass", fx: 0.42, size: 3.5, color: "#8e6cc9", steps: [0, 6, 10] },
+  { name: "Knock", role: "wood", fx: 0.53, size: 2.5, color: "#d9a441", steps: [3, 7, 11] },
+  { name: "Fifi",  role: "bell", fx: 0.80, size: 2.3, color: "#d36fa8", steps: [2, 9, 13] },
+];
+const CAP_LINES = {
+  Thump: ["* THUMP. I am the log drum. Knock me where you want the ground to shake.", "* Boom. I will remember that boom forever. Or until you hold me down."],
+  Tik: ["* tsk. sorry. i'm the shaker. knock me between the big beats.", "* i'll repeat whatever you tap. i'm good at copying."],
+  Basso: ["* ...I am Basso. I walk. Root, third, fifth, and one step sideways into what comes next.", "* Knock me on the beat and I will walk the floor of your song."],
+  Knock: ["* Knock knock. Who's there? A WOODBLOCK. Your rhythm, on repeat.", "* Off-beats are my favorite. Try one."],
+  Fifi: ["* Fifi plays the sparkly notes! Every tap, a ding, every bar!", "* The trees and I are in the same key. We checked."],
+};
+function makeMushrooms() {
+  const old = mushrooms;
+  mushrooms = MUSH_DEF.map((d, i) => ({ ...d, x: width * d.fx, bounce: 0, talked: old[i] ? old[i].talked : false,
+    pattern: old[i] ? old[i].pattern : new Array(16).fill(0), muted: false, justStep: -1, justTime: -9, get awake() { return this.pattern.some(v => v); },
+    imgA: capSprite(d.color, false), imgS: capSprite(d.color, true) }));
+}
+function mushHit(m, mx, my) { const s = m.size * (height / 800); return Math.abs(mx - m.x) < 8 * s + 4 && my < groundY + 4 && my > groundY - 16 * s - 4; }
+
+let runeX, runeTopY;
+const RUNE_H = 26;
+function runeHit(mx, my) {
+  if (Math.abs(mx - runeX) > 20) return -1;
+  const i = Math.floor((my - runeTopY) / RUNE_H);
+  return i >= 0 && i < 4 ? i : -1;
+}
+const runeGlow = [0, 0, 0, 0];
+
+let moonT = 0, moonDrag = { on: false, moved: 0 };
+function moonPos() { return { x: lerp(width * 0.52, width * 0.27, moonT), y: lerp(height * 0.14, groundY + 4, moonT) }; }
+const LUNE_LINES = ["* Night is not an ending. It is a long breath in.", "* Try the Storm. Some feelings need thunder.", "* In Wander, nobody keeps time. That is the point.", "* Drag me up again whenever you miss the dark."];
+
+let fireflies = [], fireflyCrowd = 0, gatherX = 0, gatherY = 0, lastMouseMove = -9999;
+function makeFireflies() { fireflies = Array.from({ length: 28 }, () => ({ x: random(width), y: random(height * 0.15, groundY - 20), vx: 0, vy: 0, ph: random(TWO_PI) })); }
+
+const moss = { x: 0, y: 0, path: [], walking: false, stepAcc: 0, onBridge: false, bob: 0 };
+function mossGo(x) {
+  moss.path = [];
+  if (moss.onBridge) moss.path.push({ x: bridgeX, y: groundY });
+  moss.path.push({ x, y: groundY });
+}
+function mossBridge() { moss.path = [{ x: bridgeX, y: groundY }, { x: bridgeX, y: (riverTop + riverBot) / 2 }]; }
+function updateMoss() {
+  const tgt = moss.path[0];
+  moss.walking = !!tgt;
+  if (!tgt) return;
+  const dx = tgt.x - moss.x, dy = tgt.y - moss.y, d = Math.hypot(dx, dy);
+  const sp = 1.3;
+  if (d < sp) { moss.x = tgt.x; moss.y = tgt.y; moss.path.shift(); }
+  else { moss.x += dx / d * sp; moss.y += dy / d * sp; moss.stepAcc += sp; }
+  moss.onBridge = moss.y > groundY + 2;
+}
+function mossHit(mx, my) { const s = 2.6 * (height / 800); return Math.abs(mx - moss.x) < 8 * s && my < moss.y + 2 && my > moss.y - 16 * s; }
+
+// ============================================================
+//  9. THE GARDEN: seeds, trees, pollen, berries
+// ============================================================
+let groundY;
+let seeds = [], trees = [], pollen = [], flashes = [], stars = [], fallen = [];
+const MAX_TREES = 8, MAX_DEPTH = 8, MAX_SEGS = 100, MAX_POLLEN = 120;
+
+class Tree {
+  constructor(x) {
+    this.x = x; this.energy = 7; this.segs = []; this.alpha = 1; this.dying = false;
+    this.lean = random(-0.06, 0.06); this.phase = random(TWO_PI); this.scale = height / 800;
+    this.nextGrow = millis() + 300;
+    this.addSeg(null, -HALF_PI + random(-0.06, 0.06), random(60, 85) * this.scale);
+    this.layout(0);
+  }
+  addSeg(parent, relAng, len) {
+    const s = { parent, relAng, len, depth: parent ? parent.depth + 1 : 0, bend: random(-0.18, 0.18), grow: 0, kids: 0, bloom: 0,
+                tree: this, berry: null, berryAt: 0,
+                leaves: Array.from({ length: 3 }, () => ({ dx: random(-7, 7), dy: random(-7, 4), r: random(5, 10) })) };
+    this.segs.push(s); return s;
+  }
+  layout(t) {   // recomputed every frame so the tree sways
+    for (const s of this.segs) {
+      const sway = sin(t * (M().name === "Storm" ? 2.2 : 0.9) + this.phase + s.depth * 0.7) * 0.012 * (s.depth + 1) * M().sway;
+      if (!s.parent) { s.ang = s.relAng + sway; s.x1 = this.x; s.y1 = groundY; }
+      else { s.ang = s.parent.ang + s.relAng + sway; s.x1 = s.parent.x2; s.y1 = s.parent.y2; }
+      s.x2 = s.x1 + cos(s.ang) * s.len; s.y2 = s.y1 + sin(s.ang) * s.len;
+    }
+  }
+  tips() { return this.segs.filter(s => s.kids === 0 && s.grow >= 1); }
+  growStep() {
+    if (this.dying || this.energy <= 0 || this.segs.length >= MAX_SEGS) return;
+    const tips = this.tips().filter(s => s.depth < MAX_DEPTH);
+    if (!tips.length) return;
+    const s = random(tips);
+    const n = s.depth < 2 ? 2 : (random() < 0.5 ? 2 : 1);
+    let first = null;
+    for (let i = 0; i < n; i++) {
+      const spread = n === 2 ? (i ? 1 : -1) * random(0.25, 0.55) : random(-0.3, 0.3);
+      const c = this.addSeg(s, spread + this.lean, s.len * random(0.72, 0.86));
+      if (!first) first = c;
+    }
+    s.kids += n; s.berry = null; this.energy--;
+    this.layout(millis() / 1000);
+    playNote(pitchFromY(first.y2), "grow", map(first.depth, 0, MAX_DEPTH, 0.75, 0.4));
+  }
+  update() {
+    this.layout(millis() / 1000);
+    for (const s of this.segs) if (s.grow < 1) s.grow = Math.min(1, s.grow + 0.03);
+    if (millis() > this.nextGrow) { this.growStep(); this.nextGrow = millis() + random(260, 600); }
+    for (const s of this.segs) {
+      if (s.kids === 0 && s.grow >= 1 && s.depth >= 3) {
+        s.bloom = Math.min(1, s.bloom + 0.008);
+        if (s.bloom >= 1) {
+          if (U.berries && !s.berry && s.depth >= 4 && millis() > s.berryAt && random() < 0.002 && this.segs.filter(q => q.berry).length < 4) s.berry = { r: 0, max: random(3.5, 6.5) };
+          if (s.berry) {
+            s.berry.r = Math.min(s.berry.max, s.berry.r + 0.02);
+          }
+        }
+      }
+    }
+    if (this.dying) this.alpha -= 0.006;
+  }
+  draw() {
+    const ctx = drawingContext;
+    ctx.lineCap = "round";
+    for (const pass of [0, 1]) {
+      for (const s of this.segs) {
+        const g = s.grow, ex = s.x1 + (s.x2 - s.x1) * g, ey = s.y1 + (s.y2 - s.y1) * g;
+        const mx = (s.x1 + ex) / 2, my = (s.y1 + ey) / 2, nx = -(ey - s.y1), ny = ex - s.x1;
+        const w = Math.max(0.8, 8 * this.scale * Math.pow(0.7, s.depth));
+        ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.quadraticCurveTo(mx + nx * s.bend, my + ny * s.bend, ex, ey);
+        if (pass === 0) { ctx.lineWidth = w + 7; ctx.strokeStyle = `hsla(${hue},70%,60%,${0.07 * this.alpha})`; }
+        else { ctx.lineWidth = w; ctx.strokeStyle = `hsla(${(hue + s.depth * 5) % 360},30%,${50 + s.depth * 4}%,${this.alpha})`; }
+        ctx.stroke();
+      }
+    }
+    ctx.globalCompositeOperation = "lighter";
+    for (const s of this.segs) {
+      if (s.kids !== 0 || s.bloom <= 0) continue;
+      const a = s.bloom * this.alpha;
+      for (const l of s.leaves) {
+        const x = s.x2 + l.dx, y = s.y2 + l.dy;
+        ctx.fillStyle = `hsla(${(hue + 30) % 360},80%,60%,${0.05 * a})`; ctx.beginPath(); ctx.arc(x, y, l.r * 2.2, 0, TWO_PI); ctx.fill();
+        ctx.fillStyle = `hsla(${(hue + 30) % 360},80%,70%,${0.12 * a})`; ctx.beginPath(); ctx.arc(x, y, l.r, 0, TWO_PI); ctx.fill();
+      }
+      ctx.fillStyle = `hsla(${(hue + 45) % 360},90%,88%,${0.9 * a})`; ctx.beginPath(); ctx.arc(s.x2, s.y2, 1.5 + s.bloom * 1.5, 0, TWO_PI); ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    for (const s of this.segs) if (s.berry && s.berry.r >= 0.5) drawBerry(s.x2, s.y2 + 5 + s.berry.r, s.berry.r, this.alpha);
+  }
+}
+
+function berryHue() { return (hue + 150) % 360; }
+function drawBerry(x, y, r, a = 1) {
+  const ctx = drawingContext;
+  ctx.shadowBlur = 8; ctx.shadowColor = `hsla(${berryHue()},90%,60%,${0.7 * a})`;
+  ctx.fillStyle = `hsla(${berryHue()},75%,55%,${a})`; ctx.beginPath(); ctx.arc(x, y, r, 0, TWO_PI); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = `hsla(${berryHue()},60%,90%,${0.7 * a})`; ctx.beginPath(); ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.3, 0, TWO_PI); ctx.fill();
+}
+// RULE: bigger berries are lower drums; each bounce is one hit, softer every time
+function dropBerry(s) { fallen.push(new FallingBerry(s.x2, s.y2 + 5 + s.berry.r, s.berry.r)); s.berry = null; s.berryAt = millis() + random(6000, 14000); }
+class FallingBerry {
+  constructor(x, y, r) {
+    this.x = x; this.y = y; this.r = r; this.vx = random(-0.8, 0.8); this.vy = 0; this.rest = 0; this.a = 1;
+    const ps = chordPitches(50, 76); this.midi = ps[Math.round(map(r, 3.5, 6.5, ps.length - 1, 0, true))];
+  }
+  update() {
+    if (this.rest) { if (millis() - this.rest > 5000) this.a -= 0.02; return; }
+    this.vy += 0.4; this.x += this.vx; this.y += this.vy;
+    if (this.y >= groundY - this.r && this.vy > 0) {
+      this.y = groundY - this.r;
+      if (this.vy > 1.4) { playNote(this.midi, "perc", Math.min(1, this.vy / 9) * 0.9); flashes.push({ x: this.x, y: groundY, r: 2, a: 0.6, flat: true }); }
+      this.vy *= -0.55; this.vx *= 0.75;
+      if (Math.abs(this.vy) < 1.2) { this.vy = 0; this.rest = millis(); }
+    }
+  }
+  draw() { drawBerry(this.x, this.y, this.r, Math.max(0, this.a)); }
+}
+class Seed {
+  constructor(x, y) { this.x = x; this.y = Math.min(y, groundY); this.vy = 0; }
+  update() {
+    this.vy += 0.35; this.y += this.vy;
+    if (this.y >= groundY) {
+      this.done = true; plantTree(this.x);
+      playNote(48 + CHORDS[chordIdx].root, "seed", 0.8);
+      flashes.push({ x: this.x, y: groundY, r: 0, a: 1, flat: true });
+    }
+  }
+  draw() { noStroke(); fill((hue + 40) % 360, 40, 100); circle(this.x, this.y, 6); }
+}
+// RULE: pollen falls under gravity and is drawn to the flowers of OTHER trees (inverse-square)
+class Pollen {
+  constructor(src) { this.x = src.x2; this.y = src.y2; this.src = src.tree; this.vx = random(-0.6, 0.6); this.vy = random(-1.2, -0.2); this.born = millis(); }
+  update() {
+    let ax = (noise(this.x * 0.004, frameCount * 0.003) - 0.5) * 0.04, ay = 0.012;
+    for (const tr of trees) {
+      if (tr.dying || (tr === this.src && millis() - this.born < 2500)) continue;
+      for (const s of tr.segs) {
+        if (s.kids !== 0 || s.bloom < 1) continue;
+        const dx = s.x2 - this.x, dy = s.y2 - this.y, d2 = dx * dx + dy * dy;
+        if (d2 < 49) { this.hit(s); return; }
+        if (d2 < 260 * 260) { const f = 18 / (d2 + 900), d = Math.sqrt(d2); ax += f * dx / d; ay += f * dy / d; }
+      }
+    }
+    this.vx = (this.vx + ax) * 0.985; this.vy = (this.vy + ay) * 0.985; this.x += this.vx; this.y += this.vy;
+    if (this.y > groundY || millis() - this.born > 20000) this.dead = true;
+  }
+  hit(s) { this.dead = true; s.tree.energy = Math.min(s.tree.energy + 1, 6); playNote(pitchFromY(s.y2), "pollen", 0.6); flashes.push({ x: s.x2, y: s.y2, r: 0, a: 1 }); }
+  draw() {
+    const ctx = drawingContext;
+    ctx.shadowBlur = 10; ctx.shadowColor = `hsla(${(hue + 60) % 360},100%,80%,0.9)`;
+    noStroke(); fill((hue + 60) % 360, 35, 100, 0.9); circle(this.x, this.y, 3); ctx.shadowBlur = 0;
+  }
+}
+// RULE: clicking a blossom shakes its tree; the pollen it sheds can pollinate (and sound) other trees
+function findBlossom(mx, my) {
+  for (const t of trees) { if (t.dying) continue; for (const s of t.segs) if (s.kids === 0 && s.bloom >= 1 && dist(mx, my, s.x2, s.y2) < 16) return t; }
+  return null;
+}
+function shakeTree(t) {
+  const tips = t.segs.filter(s => s.kids === 0 && s.bloom >= 1);
+  for (let i = 0; i < Math.min(6, tips.length); i++) if (pollen.length < MAX_POLLEN) pollen.push(new Pollen(random(tips)));
+  t.phase += 0.6;
+  fuurin.triggerAttackRelease(mf(random(chordPitches(84, 96))), "32n", Tone.now(), 0.35);
+}
+
+function plantTree(x) {
+  trees.push(new Tree(x)); treesPlanted++;
+  const alive = trees.filter(t => !t.dying);
+  if (alive.length > MAX_TREES) alive[0].dying = true;
+}
+
+// ============================================================
+//  10. INTERACTION
+// ============================================================
+let dragMode = null, pressInfo = null;
+function findBerry(mx, my) {
+  for (const t of trees) for (const s of t.segs)
+    if (s.berry && s.berry.r > 2.5 && dist(mx, my, s.x2, s.y2 + 5 + s.berry.r) < s.berry.r + 10) return s;
+  return null;
+}
+function onPress() {
+  if (!audioReady) return;
+  const mx = mouseX, my = mouseY;
+  if (U.moon || U.lune) {
+    const mp = moonPos();
+    if (dist(mx, my, mp.x, mp.y) < 34) { dragMode = "moon"; moonDrag.moved = 0; return; }
+  }
+  if (ripple.hit(mx, my) && !dlg.cur) { say([["ripple", random(["* Hrrm. The current is yours to steer.", "* I was a small fish once. Then I listened to this river for three hundred years.", "* Faster is not always better. Ask the trees.", "* Every river sounds different. Yours sounds like you."])]]); playNote(36 + CHORDS[chordIdx].root, "seed", 0.5); return; }
+  if (mossHit(mx, my) && !dlg.cur) { say([["moss", story.ch >= 0 && story.ch < CH.length ? CH[story.ch].hint : random(["* Everything is singing! Even the mud. Probably.", "* You don't have to be good at it. You only have to listen.", "* Every garden is different. I like the way yours sounds."])]]); return; }
+  if (U.runes) { const r = runeHit(mx, my); if (r >= 0) { runesLit.add(r); runeGlow[r] = 1; setMood(r); return; } }
+  for (const m of mushrooms) {
+    if (mushHit(m, mx, my)) {
+      if (!U.mushrooms) { flashes.push({ x: m.x, y: groundY - 20, r: 2, a: 0.5 }); return; }
+      // Knock = play now (on the 16th grid) AND write this hit into the mushroom's one-bar loop
+      const q = quantTime(), t = q.t, st = q.st;
+      m.pattern[st] = 1; m.justStep = st; m.justTime = q.grid; m.muted = false; m.bounce = 1;
+      mushSound(m, t, st);
+      pressInfo = { m, t0: millis() };
+      if (!m.talked && !dlg.cur) { m.talked = true; say([["cap", random(CAP_LINES[m.name])]]); }
+      return;
+    }
+  }
+  if (U.waterfall && mx > wfX() - 30 && mx < wfX() + 30 && my > groundY * 0.42 && my < riverTop + 6) {
+    waterLevel = (waterLevel + 1) % 4; flashes.push({ x: wfX(), y: riverTop, r: 4, a: 0.8, flat: true }); return;
+  }
+  if (U.berries) { const b = findBerry(mx, my); if (b) { dropBerry(b); return; } }
+  { const bt = findBlossom(mx, my); if (bt) { shakeTree(bt); return; } }
+  if (my > riverEdge(mx, "top") - 4 && my < riverEdge(mx, "bot") + 4) {
+    flashes.push({ x: mx, y: my, r: 2, a: 0.8, flat: true });
+    if (U.river) { dragMode = "river"; dragAccum = 0; strum(mx, 12); petals.push(new Petal(mx, my)); }
+    return;
+  }
+  if (U.trees && my < groundY && mx > 20 && mx < width - 170) seeds.push(new Seed(mx, my));
+}
+function mouseMoved() { lastMouseMove = millis(); }
+function mouseDragged() {
+  lastMouseMove = millis();
+  if (dragMode === "moon") {
+    moonDrag.moved += Math.abs(mouseY - pmouseY) + Math.abs(mouseX - pmouseX);
+    if (U.moon) moonT = constrain((mouseY - height * 0.14) / (groundY + 4 - height * 0.14), 0, 1);
+    return;
+  }
+  if (dragMode !== "river") return;
+  const d = Math.abs(mouseX - pmouseX) + Math.abs(mouseY - pmouseY);
+  stirred += d;
+  if (stirred > 300) ripple.wake();
+  flowTarget = constrain(flowTarget + (mouseX - pmouseX) * 0.01, 0.4, 3);
+  dragAccum += d;
+  if (dragAccum > 28) { dragAccum = 0; strum(mouseX, Math.abs(mouseX - pmouseX)); if (random() < 0.4 && petals.length < 30) petals.push(new Petal(mouseX, mouseY)); }
+  if (frameCount % 3 === 0) flashes.push({ x: mouseX, y: mouseY, r: 2, a: 0.5, flat: true });
+}
+function mouseReleased() {
+  if (pressInfo && millis() - pressInfo.t0 > 550) {   // long-press a mushroom: it forgets its loop
+    pressInfo.m.pattern.fill(0);
+    flashes.push({ x: pressInfo.m.x, y: groundY - 20, r: 4, a: 0.9 });
+  }
+  pressInfo = null;
+  if (dragMode === "moon" && moonDrag.moved < 5 && U.lune && !dlg.cur) say([["lune", random(LUNE_LINES)]]);
+  dragMode = null;
+}
+function keyPressed() {
+  if (key === " " || keyCode === ENTER || key === "z" || key === "Z") { advance(); return false; }
+  if ((key === "c" || key === "C") && (story.free || story.ch >= CH.length)) { trees.forEach(t => t.dying = true); pollen = []; }
+}
+
+// ============================================================
+//  11. DRAWING THE WORLD
+// ============================================================
+function setup() {
+  const cnv = createCanvas(windowWidth, windowHeight);
+  colorMode(HSB, 360, 100, 100, 1);
+  layoutScene();
+  moss.x = -30; moss.y = groundY;
+  cnv.mousePressed(onPress);
+}
+function layoutScene() {
+  groundY = height * 0.70; riverTop = height * 0.765; riverBot = height * 0.90;
+  bridgeX = width * 0.66; runeX = width * 0.06 + 10; runeTopY = groundY - 4 * RUNE_H - 14;
+  stars = []; for (let i = 0; i < 170; i++) stars.push({ x: random(width), y: random(groundY * 0.95), b: random(20, 70), p: random(TWO_PI) });
+  makeStones(); makeMushrooms(); if (!fireflies.length) makeFireflies(); makeRain();
+}
+function windowResized() { resizeCanvas(windowWidth, windowHeight); layoutScene(); if (!moss.path.length) moss.y = moss.onBridge ? (riverTop + riverBot) / 2 : groundY; }
+
+const lerpHue = (a, b, t) => (a + ((((b - a) % 360) + 540) % 360 - 180) * t + 360) % 360;
+
+function drawSky() {
+  const ctx = drawingContext, d = moonT;
+  const sk = M().name === "Rain" ? 0.4 : M().name === "Storm" ? 0.8 : 1, lk = M().name === "Storm" ? 0.7 : M().name === "Rain" ? 0.85 : 1;
+  const top = `hsl(${lerpHue(hue, 225, d)},${(45 + d * 10) * sk}%,${(4 + d * 26) * lk}%)`;
+  const bot = `hsl(${lerpHue(hue, 28, d)},${(40 + d * 40) * sk}%,${(11 + d * 42) * lk}%)`;
+  const g = ctx.createLinearGradient(0, 0, 0, groundY);
+  g.addColorStop(0, top); g.addColorStop(1, bot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, width, groundY);
+  if (d > 0.2) {   // sunrise glow
+    const sg = ctx.createRadialGradient(width * 0.72, groundY, 10, width * 0.72, groundY, width * 0.6);
+    sg.addColorStop(0, `hsla(35,100%,70%,${(d - 0.2) * 0.6})`); sg.addColorStop(1, "hsla(35,100%,60%,0)");
+    ctx.fillStyle = sg; ctx.fillRect(0, 0, width, groundY);
+  }
+  noStroke();
+  for (const s of stars) { fill(hue, 10, s.b * (0.7 + 0.3 * sin(frameCount * 0.02 + s.p)), 0.8 * (1 - d)); circle(s.x, s.y, 1.4); }
+  // Moon (Lune)
+  const mp = moonPos();
+  ctx.shadowBlur = 40; ctx.shadowColor = `hsla(50,80%,85%,${0.8 - d * 0.4})`;
+  ctx.fillStyle = `hsla(50,60%,92%,${1 - d * 0.35})`; ctx.beginPath(); ctx.arc(mp.x, mp.y, 26, 0, TWO_PI); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "hsla(50,30%,78%,0.5)";
+  ctx.beginPath(); ctx.arc(mp.x - 9, mp.y - 10, 5, 0, TWO_PI); ctx.fill();
+  ctx.beginPath(); ctx.arc(mp.x + 11, mp.y + 9, 3.5, 0, TWO_PI); ctx.fill();
+  if (U.lune) {
+    ctx.strokeStyle = "#4a4a6a"; ctx.lineWidth = 2;
+    const blink = (frameCount % 240) < 8;
+    ctx.beginPath();
+    if (blink) { ctx.moveTo(mp.x - 11, mp.y - 1); ctx.lineTo(mp.x - 5, mp.y - 1); ctx.moveTo(mp.x + 5, mp.y - 1); ctx.lineTo(mp.x + 11, mp.y - 1); }
+    else { ctx.arc(mp.x - 8, mp.y, 3, PI, TWO_PI); ctx.moveTo(mp.x + 11, mp.y); ctx.arc(mp.x + 8, mp.y, 3, PI, TWO_PI); }
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(mp.x, mp.y + 7, 4, 0.15 * PI, 0.85 * PI); ctx.stroke();
+    ctx.fillStyle = "hsla(0,70%,80%,0.6)"; ctx.beginPath(); ctx.arc(mp.x - 14, mp.y + 6, 3, 0, TWO_PI); ctx.arc(mp.x + 14, mp.y + 6, 3, 0, TWO_PI); ctx.fill();
+  }
+}
+
+function drawCliffAndWaterfall() {
+  const ctx = drawingContext, x0 = width - 150, top = groundY * 0.42;
+  ctx.fillStyle = `hsl(${hue},25%,${7 + moonT * 10}%)`;
+  ctx.beginPath(); ctx.moveTo(x0, riverBot); ctx.lineTo(x0 + 10, groundY); ctx.lineTo(x0 + 25, top + 40); ctx.lineTo(x0 + 55, top + 8);
+  ctx.lineTo(x0 + 90, top); ctx.lineTo(width, top - 20); ctx.lineTo(width, riverBot); ctx.closePath(); ctx.fill();
+  // Water column; width and brightness follow the water level
+  const w = [5, 24, 36, 50][waterLevel], x = wfX();
+  const g = ctx.createLinearGradient(0, top, 0, riverTop);
+  g.addColorStop(0, `hsla(${hue},50%,70%,0.55)`); g.addColorStop(1, `hsla(${hue},60%,85%,0.8)`);
+  ctx.fillStyle = g; ctx.fillRect(x - w / 2, top + 4, w, riverTop - top);
+  ctx.strokeStyle = `hsla(${hue},40%,95%,0.5)`; ctx.lineWidth = 1;
+  const sp = 2 + waterLevel * 1.5;
+  for (let i = 0; i < 6 + waterLevel * 4; i++) {
+    const sx = x - w / 2 + ((i * 7.3) % Math.max(w, 1));
+    const sy = top + (((frameCount * sp + i * 37) % (riverTop - top)));
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + 14); ctx.stroke();
+  }
+  ctx.fillStyle = `hsla(${hue},30%,95%,${0.08 + waterLevel * 0.05})`;
+  for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(x + sin(frameCount * 0.03 + i) * 14, riverTop + 6, w * 0.6 + i * 6, 6 + i, 0, 0, TWO_PI); ctx.fill(); }
+}
+
+function drawBanksAndRiver() {
+  const ctx = drawingContext;
+  let g = ctx.createLinearGradient(0, groundY, 0, riverTop);
+  g.addColorStop(0, `hsl(${hue},35%,${10 + moonT * 12}%)`); g.addColorStop(1, `hsl(${hue},35%,${6 + moonT * 8}%)`);
+  ctx.fillStyle = g; ctx.fillRect(0, groundY, width, riverBot - groundY);
+  ctx.beginPath(); ctx.moveTo(0, riverEdge(0, "top"));
+  for (let x = 0; x <= width; x += 10) ctx.lineTo(x, riverEdge(x, "top"));
+  for (let x = width; x >= 0; x -= 10) ctx.lineTo(x, riverEdge(x, "bot"));
+  ctx.closePath();
+  g = ctx.createLinearGradient(0, riverTop, 0, riverBot);
+  g.addColorStop(0, `hsl(${hue},55%,${16 + moonT * 18}%)`); g.addColorStop(1, `hsl(${hue},55%,${9 + moonT * 14}%)`);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.strokeStyle = `hsla(${hue},60%,75%,${U.river ? 0.12 : 0.05})`; ctx.lineWidth = 1.2;
+  for (let i = 0; i < 26; i++) {
+    const y = riverTop + ((i * 37) % 100) / 100 * (riverBot - riverTop), len = 30 + (i * 53) % 70;
+    const x = ((i * 211 + riverOffset * (0.7 + (i % 5) * 0.12)) % (width + 200)) - 100;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y + sin(x * 0.01) * 2); ctx.stroke();
+  }
+  ctx.restore();
+  for (const s of stones) {
+    s.glow *= 0.94;
+    ctx.fillStyle = `hsl(${hue},20%,${14 + s.glow * 25}%)`; ctx.beginPath(); ctx.ellipse(s.x, s.y, s.w / 2, s.w / 4, 0, 0, TWO_PI); ctx.fill();
+    ctx.fillStyle = `hsla(${hue},40%,80%,${0.15 + s.glow * 0.6})`; ctx.beginPath(); ctx.ellipse(s.x - 3, s.y - 3, s.w / 4, s.w / 10, 0, 0, TWO_PI); ctx.fill();
+  }
+}
+
+function drawBridge() {
+  const ctx = drawingContext, x = bridgeX, y0 = groundY + 2, y1 = riverBot + 10;
+  ctx.fillStyle = `hsl(28,35%,${18 + moonT * 15}%)`;
+  ctx.beginPath(); ctx.moveTo(x - 14, y0); ctx.lineTo(x + 14, y0); ctx.lineTo(x + 22, y1); ctx.lineTo(x - 22, y1); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = `hsl(28,30%,${10 + moonT * 10}%)`; ctx.lineWidth = 1;
+  for (let y = y0 + 6; y < y1; y += 7) { const k = (y - y0) / (y1 - y0), hw = 14 + 8 * k; ctx.beginPath(); ctx.moveTo(x - hw, y); ctx.lineTo(x + hw, y); ctx.stroke(); }
+  ctx.strokeStyle = `hsl(28,35%,${26 + moonT * 15}%)`; ctx.lineWidth = 2;
+  for (const sgn of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(x + sgn * 15, y0 - 12); ctx.lineTo(x + sgn * 23, y1 - 12); ctx.stroke();
+    for (let k = 0; k <= 1; k += 0.25) { const px = x + sgn * (15 + 8 * k), py = y0 + (y1 - y0) * k; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 12); ctx.stroke(); }
+  }
+}
+
+function drawFrontBank() {
+  const ctx = drawingContext;
+  ctx.beginPath(); ctx.moveTo(0, height);
+  for (let x = 0; x <= width; x += 10) ctx.lineTo(x, riverEdge(x, "bot"));
+  ctx.lineTo(width, height); ctx.closePath();
+  ctx.fillStyle = `hsl(${hue},35%,${5 + moonT * 8}%)`; ctx.fill();
+}
+
+const RUNE_GLYPHS = [
+  [[0, -8, 0, 8], [-6, -2, 0, -8], [6, -2, 0, -8]],
+  [[-6, -8, 6, 8], [6, -8, -6, 8], [-6, 0, 6, 0]],
+  [[-6, 8, 0, -8], [0, -8, 6, 8], [-3, 2, 3, 2]],
+  [[0, -8, 0, 8], [0, -8, 6, -3], [0, -1, 6, 4]],
+];
+function drawRunestone() {
+  const ctx = drawingContext, x = runeX, top = runeTopY - 10, w = 44;
+  ctx.fillStyle = `hsl(${hue},12%,${16 + moonT * 12}%)`;
+  ctx.beginPath(); ctx.moveTo(x - w / 2, groundY + 2); ctx.lineTo(x - w / 2 + 2, top + 16); ctx.quadraticCurveTo(x, top - 12, x + w / 2 - 2, top + 16); ctx.lineTo(x + w / 2, groundY + 2); ctx.closePath(); ctx.fill();
+  ctx.font = "18px VT323, monospace"; ctx.textBaseline = "middle";
+  for (let i = 0; i < 4; i++) {
+    runeGlow[i] *= 0.97;
+    const cy = runeTopY + i * RUNE_H + RUNE_H / 2, cur = mood === i && U.runes;
+    const a = !U.runes ? 0.12 : (cur ? 1 : runesLit.has(i) ? 0.55 : 0.35) + runeGlow[i] * 0.4;
+    const col = MOODS[i].color;
+    ctx.strokeStyle = `hsla(${col},90%,72%,${Math.min(1, a)})`; ctx.lineWidth = 2;
+    if (cur || runeGlow[i] > 0.05) { ctx.shadowBlur = 14; ctx.shadowColor = `hsla(${col},90%,65%,1)`; }
+    for (const l of RUNE_GLYPHS[i]) { ctx.beginPath(); ctx.moveTo(x + l[0] * 0.9, cy + l[1] * 0.9); ctx.lineTo(x + l[2] * 0.9, cy + l[3] * 0.9); ctx.stroke(); }
+    ctx.shadowBlur = 0;
+    if (U.runes) { ctx.fillStyle = `hsla(${col},70%,80%,${cur ? 0.95 : 0.4})`; ctx.fillText((cur ? "▸ " : "  ") + MOODS[i].name, x + 26, cy); }
+  }
+}
+
+let rainDrops = [];
+function makeRain() { if (typeof width === "undefined") return; rainDrops = Array.from({ length: M().rain }, () => ({ x: random(width), y: random(-height, height), sp: random(9, 15), len: random(8, 18) })); }
+function drawWeather() {
+  const ctx = drawingContext, storm = M().name === "Storm", slant = storm ? 3.5 : 0.8;
+  if (rainDrops.length) {
+    ctx.strokeStyle = storm ? "rgba(220,225,255,0.35)" : "rgba(200,215,255,0.22)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const r of rainDrops) {
+      r.x += slant; r.y += r.sp * (storm ? 1.4 : 1);
+      if (r.y > riverBot) { if (r.y < riverBot + 20 && Math.random() < 0.05) flashes.push({ x: r.x, y: random(riverTop, riverBot), r: 1, a: 0.3, flat: true }); r.y = random(-60, -10); r.x = random(-100, width); }
+      ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - slant * 2, r.y - r.len);
+    }
+    ctx.stroke();
+  }
+  if (lightning > 0.02) {
+    ctx.fillStyle = `rgba(235,235,255,${lightning * 0.35})`; ctx.fillRect(0, 0, width, height);
+    if (lightning > 0.8) {   // a branching bolt
+      ctx.strokeStyle = `rgba(255,255,255,${lightning})`; ctx.lineWidth = 2; ctx.beginPath();
+      let bx = random(width * 0.2, width * 0.8), by = 0; ctx.moveTo(bx, by);
+      while (by < groundY * 0.8) { bx += random(-30, 30); by += random(20, 45); ctx.lineTo(bx, by); }
+      ctx.stroke();
+    }
+    lightning *= 0.85;
+  }
+}
+function drawAurora() {
+  if (!M().free) return;
+  const ctx = drawingContext;
+  ctx.globalCompositeOperation = "lighter"; ctx.lineWidth = 34; ctx.lineCap = "round";
+  for (let k = 0; k < 3; k++) {
+    ctx.strokeStyle = `hsla(${(frameCount * 0.4 + k * 70) % 360},85%,62%,${0.1 * (1 - moonT * 0.6)})`;
+    ctx.beginPath();
+    for (let x = -20; x <= width + 20; x += 20) { const y = height * (0.16 + k * 0.05) + sin(x * 0.004 + frameCount * 0.008 + k * 2) * 40; x < 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function drawMushrooms() {
+  const s0 = height / 800;
+  for (const m of mushrooms) {
+    m.bounce *= 0.85;
+    const sc = m.size * s0, ctx = drawingContext;
+    ctx.save(); ctx.translate(m.x, groundY + 1); ctx.scale(1 + m.bounce * 0.12, 1 - m.bounce * 0.15);
+    const on = m.awake && !m.muted;
+    drawSprite(on ? m.imgA : m.imgS, 0, 0, sc, on ? m.color : null);
+    ctx.restore();
+    // The loop: 16 dots above the cap, one per 16th note; the playhead sweeps across
+    if (U.mushrooms && audioReady) {
+      const y = groundY - 16 * sc - 14, x0 = m.x - 37;
+      for (let i = 0; i < 16; i++) {
+        const isHead = i === playhead, hit = m.pattern[i], x = x0 + i * 4 + (i >> 2) * 3;
+        ctx.fillStyle = hit ? (on ? m.color : "#999") : isHead ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.18)";
+        if (hit) ctx.fillRect(x, y - 2, 3, 6); else ctx.fillRect(x, y, 2, 2);
+        if (hit && isHead && on) { ctx.fillStyle = "#fff"; ctx.fillRect(x, y - 2, 3, 6); }
+      }
+    }
+    if (!m.awake && U.mushrooms && frameCount % 90 < 60) {
+      fill(0, 0, 100, 0.5); noStroke(); textSize(10); textFont("monospace");
+      text("z", m.x + 8 * sc, groundY - 16 * sc - ((frameCount % 90) / 6));
+    }
+  }
+}
+
+function updateFireflies() {
+  if (!U.fireflies) { fireflyCrowd = 0; return; }
+  const following = !finale.gather && millis() - lastMouseMove < 3000 && mouseY < groundY && mouseY > 0;
+  let n = 0, sx = 0, sy = 0;
+  for (const f of fireflies) {
+    let ax = (noise(f.ph, frameCount * 0.01) - 0.5) * 0.3, ay = (noise(f.ph + 50, frameCount * 0.01) - 0.5) * 0.3;
+    if (following) { const dx = mouseX - f.x, dy = mouseY - f.y, d = Math.hypot(dx, dy) + 1; if (d < 380) { ax += dx / d * 0.09; ay += dy / d * 0.09; } }
+    if (finale.gather) {   // in the finale they rise and circle the sky like a slow constellation
+      const ang = f.ph * 7 + frameCount * 0.004, hx = width * 0.5 + cos(ang) * width * 0.3, hy = height * 0.28 + sin(ang * 1.3) * height * 0.12;
+      ax += (hx - f.x) * 0.0015; ay += (hy - f.y) * 0.0015;
+    }
+    if (f.y > groundY - 10) ay -= 0.1; if (f.y < 20) ay += 0.1;
+    f.vx = (f.vx + ax) * 0.95; f.vy = (f.vy + ay) * 0.95;
+    f.x = (f.x + f.vx + width) % width; f.y += f.vy;
+    if (following && dist(f.x, f.y, mouseX, mouseY) < 70) { n++; sx += f.x; sy += f.y; }
+  }
+  fireflyCrowd = n;
+  if (n) { gatherX = sx / n; gatherY = sy / n; }
+}
+function drawFireflies() {
+  if (!U.fireflies) return;
+  const ctx = drawingContext;
+  ctx.globalCompositeOperation = "lighter";
+  for (const f of fireflies) {
+    const b = 0.5 + 0.5 * sin(frameCount * 0.08 + f.ph * 6);
+    ctx.fillStyle = `hsla(55,100%,60%,${0.10 * b})`; ctx.beginPath(); ctx.arc(f.x, f.y, 7, 0, TWO_PI); ctx.fill();
+    ctx.fillStyle = `hsla(55,100%,65%,${0.25 * b})`; ctx.beginPath(); ctx.arc(f.x, f.y, 3.5, 0, TWO_PI); ctx.fill();
+    ctx.fillStyle = `hsla(60,100%,88%,${0.8 * b + 0.2})`; ctx.beginPath(); ctx.arc(f.x, f.y, 1.6, 0, TWO_PI); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function drawMoss() {
+  if (story.ch < 0 && !story.free) return;
+  const sc = 2.6 * (height / 800);
+  const bob = moss.walking ? Math.abs(sin(frameCount * 0.25)) * 3 : sin(frameCount * 0.05) * 1;
+  drawSprite(SPRITE.moss, moss.x, moss.y - bob, sc, "hsla(120,70%,60%,0.8)");
+}
+
+function draw() {
+  const dh = ((targetHue - hue + 540) % 360) - 180; hue = (hue + dh * 0.01 + (M().free ? 0.15 : 0) + 360) % 360;
+  // River flow eases toward its target and drives the tempo
+  const ft = U.river ? flowTarget : 0.15;
+  flow += (ft - flow) * 0.05;
+  riverOffset += flow * 1.3;
+  if (audioReady && frameCount % 15 === 0) {
+    const bpm = Math.round((finale.on ? 72 : U.river ? flowToBpm(flow) : 66) * M().tempo);
+    if (Math.abs(Tone.Transport.bpm.value - bpm) >= 1) Tone.Transport.bpm.rampTo(bpm, 0.3);
+    $("bpm").textContent = (U.river ? `river tempo · ${bpm} BPM` : "the river sleeps") + (M().free ? " · free time" : M().swing > 0.4 ? " · swing" : "");
+    noiseGain.gain.rampTo(U.waterfall ? WATER_GAIN[waterLevel] : 0, 0.5);
+    padFilter.frequency.rampTo(1200 + moonT * 2600, 0.5);
+  }
+
+  drawSky();
+  drawAurora();
+  drawCliffAndWaterfall();
+  drawBanksAndRiver();
+  for (const p of petals) { p.update(); p.draw(); }
+  petals = petals.filter(p => !p.dead);
+  ripple.update(); ripple.draw();
+  drawBridge();
+  drawRunestone();
+
+  for (const t of trees) { t.update(); t.draw(); }
+  trees = trees.filter(t => t.alpha > 0);
+  drawMushrooms();
+  updateMoss(); drawMoss();
+  for (const s of seeds) { s.update(); s.draw(); }
+  seeds = seeds.filter(s => !s.done);
+  for (const b of fallen) { b.update(); b.draw(); }
+  fallen = fallen.filter(b => b.a > 0);
+  for (const p of pollen) { p.update(); if (!p.dead) p.draw(); }
+  pollen = pollen.filter(p => !p.dead);
+  updateFireflies(); drawFireflies();
+  updateLanterns();
+  drawFrontBank();
+  drawWeather();
+
+  noFill();
+  for (const f of flashes) {
+    f.r += 1.4; f.a -= 0.025;
+    stroke((hue + 50) % 360, 40, 100, Math.max(0, f.a)); strokeWeight(1.1);
+    if (f.flat) ellipse(f.x, f.y, f.r * 3, f.r); else circle(f.x, f.y, f.r * 2);
+  }
+  flashes = flashes.filter(f => f.a > 0);
+
+  updateDialogue();
+  updateStory();
+  if (frameCount % 300 === 0) for (const k in slotCount) delete slotCount[k];
+}
+
+// ============================================================
+//  12. START (browsers require a click before audio can play)
+// ============================================================
+async function begin() {
+  const el = $("start");
+  if (!el || el.dataset.started) return; el.dataset.started = 1;
+  try { await initAudio(); } catch (e) { console.error(e); }
+  el.style.opacity = 0; setTimeout(() => el.remove(), 1200);
+  setTimeout(() => startChapter(0), 900);
+}
+$("btnStory").addEventListener("click", begin);
+document.addEventListener("keydown", e => { if ($("start") && (e.key === "z" || e.key === "Z" || e.key === "Enter")) begin(); });
+// Title-screen flower (pixel sprite)
+{
+  const FLOWER = { pal: { p: "#f28bb8", P: "#ffc1dc", y: "#ffd84a", Y: "#fff3a8", g: "#4c9a4a", l: "#6cc36a", L: "#a8e69a" }, rows: [
+    "......pppp......", "....pp.PP.pp....", "...pPPpPPpPPp...", "...pPPPyyPPPp...",
+    "....ppyYYypp....", "...pPPPyyPPPp...", "...pPPpPPpPPp...", "....pp.PP.pp....",
+    "......pppp......", ".......gg.......", "..ll...gg...ll..", "..lLl..gg..lLl..",
+    "...lLl.gg.lLl...", "....lllgglll....", ".......gg.......", "......gggg......",
+  ]};
+  const img = renderSprite(FLOWER.rows, FLOWER.pal);
+  for (const id of ["logoFlower", "cursorFlower"]) $(id).getContext("2d").drawImage(img, 0, 0);
+}
+$("btnStay").addEventListener("click", leaveFinale);
+$("btnAgain").addEventListener("click", () => location.reload());
+</script>
+</body>
+</html>
