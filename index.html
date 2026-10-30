@@ -10,19 +10,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #070914; overflow: hidden; height: 100%;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #dfe6ff; }
+    font-family: "VT323", ui-monospace, monospace; color: #dfe6ff; }
   canvas#defaultCanvas0 { display: block; touch-action: none; }
   .px { font-family: "VT323", ui-monospace, monospace; }
   #hud { position: fixed; top: 16px; left: 20px; pointer-events: none; user-select: none; }
-  #hud .t { font-size: 12px; letter-spacing: 0.22em; opacity: 0.65; }
-  #hud .c { font-size: 28px; font-weight: 200; margin-top: 4px; }
-  #hud .b { font-size: 12px; opacity: 0.6; margin-top: 3px; letter-spacing: 0.08em; }
+  #hud .t { font-family: "Press Start 2P", monospace; font-size: 10px; letter-spacing: 0.18em; opacity: 0.7; }
+  #hud .c { font-size: 34px; margin-top: 8px; color: #fff; }
+  #hud .b { font-size: 19px; opacity: 0.65; margin-top: 0; letter-spacing: 0.04em; }
   #goal { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); text-align: center;
     pointer-events: none; user-select: none; transition: opacity 0.8s; opacity: 0; max-width: 60vw; }
   #goal .ch { font-size: 20px; letter-spacing: 0.2em; color: #ffd86b; }
   #goal .g { font-size: 27px; color: #fff; text-shadow: 0 0 8px #0008; }
-  #hint { position: fixed; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 12px;
-    opacity: 0.45; pointer-events: none; letter-spacing: 0.05em; }
+  #hint { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 19px; color: #fff;
+    opacity: 0.5; pointer-events: none; letter-spacing: 0.04em; }
   #dlg { position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%); width: min(720px, 92vw);
     box-sizing: border-box; background: #000; border: 4px solid #fff; padding: 14px 18px 18px;
     display: none; gap: 18px; align-items: flex-start; color: #fff; z-index: 5; cursor: pointer; user-select: none; }
@@ -108,7 +108,7 @@
   <h2>THE END</h2>
   <div class="row"><div class="btn" id="btnStay">* Stay in the grove</div><div class="btn" id="btnAgain">* Play again</div></div>
 </div>
-<div id="hint">Every sound is yours: plant, shake blossoms, stir the river, knock on caps, touch the runes · Click characters to talk · Space to continue</div>
+<div id="hint">[CLICK] plant · shake · knock · pick &nbsp; [DRAG] river · moon &nbsp; [HOLD] cap to clear &nbsp; [Z / SPACE] continue</div>
 
 <script>
 // Put your name here; it appears in the end credits
@@ -124,7 +124,7 @@ const MOODS = [
     chords: [
       { name: "Cmaj9",     root: 0, tones: [0, 4, 7, 11, 2], hue: 205 },
       { name: "Ebmaj9",    root: 3, tones: [3, 7, 10, 2, 5], hue: 255 },
-      { name: "Abmaj7♯11", root: 8, tones: [8, 0, 3, 7, 2],  hue: 300 },
+      { name: "Abmaj7#11", root: 8, tones: [8, 0, 3, 7, 2],  hue: 300 },
       { name: "Fmaj9",     root: 5, tones: [5, 9, 0, 4, 7],  hue: 170 },
     ] },
   { name: "Rain", color: 210, tempo: 0.85, swing: 0.65, barsPerChord: 2, sway: 1.6,
@@ -133,23 +133,23 @@ const MOODS = [
       { name: "Dm11",  root: 2, tones: [2, 5, 9, 0, 4, 7], hue: 215 },
       { name: "G13",   root: 7, tones: [7, 11, 5, 9, 4],   hue: 228 },
       { name: "Cmaj9", root: 0, tones: [0, 4, 7, 11, 2],   hue: 200 },
-      { name: "A7♭9",  root: 9, tones: [9, 1, 4, 7, 10],   hue: 238 },
+      { name: "A7b9",  root: 9, tones: [9, 1, 4, 7, 10],   hue: 238 },
     ] },
   { name: "Storm", color: 350, tempo: 1.4, swing: 0, barsPerChord: 1, sway: 4,
     reverb: 0.3, bright: 16000, drive: 0.35, rain: 320,
     chords: [   // tense, altered dominants, one per bar
-      { name: "E7♯9",   root: 4,  tones: [4, 8, 2, 7, 11],  hue: 350 },
-      { name: "G7♯9",   root: 7,  tones: [7, 11, 5, 10, 2], hue: 320 },
-      { name: "B♭7♯11", root: 10, tones: [10, 2, 8, 4, 5],  hue: 285 },
-      { name: "C♯7alt", root: 1,  tones: [1, 5, 11, 2, 9],  hue: 10 },
+      { name: "E7#9",   root: 4,  tones: [4, 8, 2, 7, 11],  hue: 350 },
+      { name: "G7#9",   root: 7,  tones: [7, 11, 5, 10, 2], hue: 320 },
+      { name: "Bb7#11", root: 10, tones: [10, 2, 8, 4, 5],  hue: 285 },
+      { name: "C#7alt", root: 1,  tones: [1, 5, 11, 2, 9],  hue: 10 },
     ] },
   { name: "Wander", color: 120, tempo: 1.0, swing: 0.5, barsPerChord: 2, sway: 1.3, free: true,
     reverb: 0.6, bright: 11000, drive: 0, rain: 0,
     chords: [   // free jazz: no fixed order, no grid, chromatic neighbours welcome
-      { name: "C7♯11",    root: 0,  tones: [0, 4, 7, 10, 6, 2], hue: 140 },
-      { name: "F♯ø7",     root: 6,  tones: [6, 9, 0, 4],        hue: 60 },
-      { name: "E♭maj7♯5", root: 3,  tones: [3, 7, 11, 2],       hue: 185 },
-      { name: "B13♭9",    root: 11, tones: [11, 3, 9, 0, 8],    hue: 25 },
+      { name: "C7#11",    root: 0,  tones: [0, 4, 7, 10, 6, 2], hue: 140 },
+      { name: "F#ø7",     root: 6,  tones: [6, 9, 0, 4],        hue: 60 },
+      { name: "Ebmaj7#5", root: 3,  tones: [3, 7, 11, 2],       hue: 185 },
+      { name: "B13b9",    root: 11, tones: [11, 3, 9, 0, 8],    hue: 25 },
     ] },
 ];
 let mood = 0, CHORDS = MOODS[0].chords;
@@ -370,7 +370,7 @@ function blip(who) {
   v.synth.triggerAttackRelease(mf(random(ps)), "32n", now, 0.7);
 }
 
-function showChord() { const el = document.getElementById("chord"); if (el && CHORDS[chordIdx]) el.textContent = `${M().name} · ${CHORDS[chordIdx].name}`; }
+function showChord() { const el = document.getElementById("chord"); if (el && CHORDS[chordIdx]) el.textContent = M().name; }
 // RULE: the runestone sets the mood of everything: harmony, tempo, swing, timbre, weather
 function setMood(i, silent) {
   mood = i; CHORDS = MOODS[i].chords; chordIdx = 0; barsLeft = MOODS[i].barsPerChord;
@@ -1263,7 +1263,7 @@ function drawMushrooms() {
       }
     }
     if (!m.awake && U.mushrooms && frameCount % 90 < 60) {
-      fill(0, 0, 100, 0.5); noStroke(); textSize(10); textFont("monospace");
+      fill(0, 0, 100, 0.5); noStroke(); textSize(16); textFont("VT323");
       text("z", m.x + 8 * sc, groundY - 16 * sc - ((frameCount % 90) / 6));
     }
   }
